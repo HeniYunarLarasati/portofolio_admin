@@ -1,26 +1,59 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState } from 'react';
+import './assets/css/base.css';
+import { Provider } from 'react-redux';
+import Sidebar from './components/layouts/Sidebar';
+import ContextProvider from './contexts';
+import { BrowserRouter, Switch, Route, useHistory } from 'react-router-dom';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
 
-function App() {
+export const MainComponent = () => {
+  const history = useHistory();
+  useEffect(() => {
+    const token = localStorage.getItem('gallery-access-token');
+    if (token) {
+      const time = new Date().getTime();
+      const exp = localStorage.getItem('gallery-token-exp') * 1000;
+      if (time > exp) {
+        localStorage.removeItem('gallery-access-token');
+        localStorage.removeItem('gallery-token-exp');
+        localStorage.removeItem('gallery-user-data');
+        history.replace('/login');
+      }
+    } else {
+      history.replace('/login');
+    }
+  }, [history]);
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Sidebar>
+      <Route exact path={process.env.PUBLIC_URL + '/'} component={Dashboard} />
+    </Sidebar>
   );
-}
+};
+
+const App = ({ store }) => {
+  const [width, setWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    function handleResize() {
+      setWidth(window.innerWidth);
+    }
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [width]);
+
+  return (
+    <Provider store={store}>
+      <ContextProvider>
+        <BrowserRouter>
+          <Switch>
+            <Route exact path="/login" component={Login} />
+            <Route exact component={MainComponent} />
+          </Switch>
+        </BrowserRouter>
+      </ContextProvider>
+    </Provider>
+  );
+};
 
 export default App;
